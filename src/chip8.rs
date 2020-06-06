@@ -1,4 +1,4 @@
-use crate::instruction as instr;
+use crate::instruction;
 
 const MEM_SIZE: usize = 0x1000;
 const N_REGISTERS: usize = 16;
@@ -33,5 +33,5 @@ impl Chip8 {
         }
     }
 
-    pub fn execute(&mut self, instr: instr::Instruction) {}
+    pub fn execute_instruction(&mut self, i: instruction::Instruction) {}
 }
