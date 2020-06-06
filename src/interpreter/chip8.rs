@@ -1,5 +1,3 @@
-use crate::instruction;
-
 const MEM_SIZE: usize = 0x1000;
 const N_REGISTERS: usize = 16;
 const STACK_DEPTH: usize = 12;
@@ -33,5 +31,5 @@ impl Chip8 {
         }
     }
 
-    pub fn execute_instruction(&mut self, i: instruction::Instruction) {}
+    // pub fn execute_instruction(&mut self, i: instruction::Instruction) {}
 }

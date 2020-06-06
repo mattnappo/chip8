@@ -1,5 +1,5 @@
-use chip8::chip8;
+use chip8::interpreter;
 
 fn main() {
-    let c8 = chip8::Chip8::new();
+    let c8 = interpreter::chip8::Chip8::new();
 }

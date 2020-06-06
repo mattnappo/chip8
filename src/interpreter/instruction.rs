@@ -27,7 +27,7 @@ pub enum Instruction {
     SUBN(Vx, Vy),     // 8XY7
     SHL(Vx, Vy),      // 8XYE
     SNEr(Vx, Vy),     // 9XY0
-    LD(Addr),         // ANNN
+    LDa(Addr),        // ANNN
     JP0(Addr),        // BNNN
     RND(Vx, Byte),    // CXNN
     DRW(Vx, Vy, Nib), // DXYN
