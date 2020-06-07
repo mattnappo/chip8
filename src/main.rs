@@ -1,3 +1,4 @@
+use chip8::arithmetic;
 use chip8::interpreter;
 
 fn main() {

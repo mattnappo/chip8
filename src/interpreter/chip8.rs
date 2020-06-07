@@ -1,5 +1,6 @@
 use super::instruction::Instruction as Instr;
 use crate::arithmetic;
+use rand::Rng;
 
 const MEM_SIZE: usize = 0x1000;
 const N_REGISTERS: usize = 16;
@@ -40,7 +41,9 @@ impl Chip8 {
             Instr::I0NNN(a) => {}
             Instr::I00E0 => {}
             Instr::I00EE => {}
-            Instr::I1NNN(a) => {}
+            Instr::I1NNN(a) => {
+                self.pc = a;
+            }
             Instr::I2NNN(a) => {}
             Instr::I3XNN(x, b) => {}
             Instr::I4XNN(x, b) => {}
@@ -59,16 +62,25 @@ impl Chip8 {
                 self.V[F] = arithmetic::check_borrow(&self.V[x], &self.V[y]);
                 self.V[x] -= self.V[y];
             }
-            Instr::I8XY6(x, y) => {}
+            Instr::I8XY6(x, y) => {
+                self.V[F] = arithmetic::get_lsb(&self.V[y]);
+                self.V[x] = self.V[y] >> 1;
+            }
             Instr::I8XY7(x, y) => {
                 self.V[F] = arithmetic::check_borrow(&self.V[x], &self.V[y]);
                 self.V[x] = self.V[y] - self.V[x];
             }
-            Instr::I8XYE(x, y) => {}
+            Instr::I8XYE(x, y) => {
+                self.V[F] = arithmetic::get_msb(&self.V[y]);
+                self.V[x] = self.V[y] << 1;
+            }
             Instr::I9XY0(x, y) => {}
             Instr::IANNN(a) => {}
             Instr::IBNNN(a) => {}
-            Instr::ICNNN(x, b) => {}
+            Instr::ICXNN(x, b) => {
+                let r: u8 = rand::thread_rng().gen();
+                self.V[x] = r & b;
+            }
             Instr::IDXYN(x, y, n) => {}
             Instr::IEX9E(x) => {}
             Instr::IEXA1(x) => {}

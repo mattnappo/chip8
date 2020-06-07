@@ -29,7 +29,7 @@ pub enum Instruction {
     I9XY0(Vx, Vy),      // 9XY0
     IANNN(Addr),        // ANNN
     IBNNN(Addr),        // BNNN
-    ICNNN(Vx, Byte),    // CXNN
+    ICXNN(Vx, Byte),    // CXNN
     IDXYN(Vx, Vy, Nib), // DXYN
     IEX9E(Vx),          // EX9E
     IEXA1(Vx),          // EXA1

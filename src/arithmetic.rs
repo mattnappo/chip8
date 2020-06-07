@@ -8,8 +8,22 @@ pub fn check_carry(x: &u8, y: &u8) -> u8 {
 pub fn check_borrow(x: &u8, y: &u8) -> u8 {
     // If no borrow
     if x > y {
-        1
+        return 1;
     }
     // If borrow (if y > x)
     0
+}
+
+pub fn get_lsb(n: &u8) -> u8 {
+    match n & (1 << 0) != 0 {
+        true => 1,
+        false => 0,
+    }
+}
+
+pub fn get_msb(n: &u8) -> u8 {
+    match n & (1 << 7) != 0 {
+        true => 1,
+        false => 0,
+    }
 }
