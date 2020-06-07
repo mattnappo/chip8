@@ -1,6 +1,6 @@
 type Addr = u16;
-type Vx = u8;
-type Vy = u8;
+type Vx = usize;
+type Vy = usize;
 type Byte = u8;
 type Nib = u8;
 

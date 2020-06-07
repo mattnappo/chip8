@@ -1,10 +1,12 @@
 use super::instruction::Instruction as Instr;
+use crate::arithmetic;
 
 const MEM_SIZE: usize = 0x1000;
 const N_REGISTERS: usize = 16;
 const STACK_DEPTH: usize = 12;
 const WIDTH: usize = 64;
 const HEIGHT: usize = 32;
+const F: usize = 0xF;
 
 pub struct Chip8 {
     memory: [u8; MEM_SIZE],   // The memory
@@ -43,16 +45,25 @@ impl Chip8 {
             Instr::I3XNN(x, b) => {}
             Instr::I4XNN(x, b) => {}
             Instr::I5XY0(x, y) => {}
-            Instr::I6XNN(x, b) => {}
-            Instr::I7XNN(x, b) => {}
-            Instr::I8XY0(x, y) => {}
-            Instr::I8XY1(x, y) => {}
-            Instr::I8XY2(x, y) => {}
-            Instr::I8XY3(x, y) => {}
-            Instr::I8XY4(x, y) => {}
-            Instr::I8XY5(x, y) => {}
+            Instr::I6XNN(x, b) => self.V[x] = b,
+            Instr::I7XNN(x, b) => self.V[x] += b,
+            Instr::I8XY0(x, y) => self.V[x] = self.V[y],
+            Instr::I8XY1(x, y) => self.V[x] |= self.V[y],
+            Instr::I8XY2(x, y) => self.V[x] &= self.V[y],
+            Instr::I8XY3(x, y) => self.V[x] ^= self.V[y],
+            Instr::I8XY4(x, y) => {
+                self.V[F] = arithmetic::check_carry(&self.V[x], &self.V[y]);
+                self.V[x] += self.V[y];
+            }
+            Instr::I8XY5(x, y) => {
+                self.V[F] = arithmetic::check_borrow(&self.V[x], &self.V[y]);
+                self.V[x] -= self.V[y];
+            }
             Instr::I8XY6(x, y) => {}
-            Instr::I8XY7(x, y) => {}
+            Instr::I8XY7(x, y) => {
+                self.V[F] = arithmetic::check_borrow(&self.V[x], &self.V[y]);
+                self.V[x] = self.V[y] - self.V[x];
+            }
             Instr::I8XYE(x, y) => {}
             Instr::I9XY0(x, y) => {}
             Instr::IANNN(a) => {}
