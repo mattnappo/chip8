@@ -1,4 +1,4 @@
-use super::instruction;
+use super::instruction::Instruction as Instr;
 
 const MEM_SIZE: usize = 0x1000;
 const N_REGISTERS: usize = 16;
@@ -33,5 +33,43 @@ impl Chip8 {
         }
     }
 
-    pub fn execute_instruction(&mut self, i: instruction::Instruction) {}
+    pub fn execute_instruction(&mut self, i: Instr) {
+        match i {
+            Instr::I0NNN(a) => {}
+            Instr::I00E0 => {}
+            Instr::I00EE => {}
+            Instr::I1NNN(a) => {}
+            Instr::I2NNN(a) => {}
+            Instr::I3XNN(x, b) => {}
+            Instr::I4XNN(x, b) => {}
+            Instr::I5XY0(x, y) => {}
+            Instr::I6XNN(x, b) => {}
+            Instr::I7XNN(x, b) => {}
+            Instr::I8XY0(x, y) => {}
+            Instr::I8XY1(x, y) => {}
+            Instr::I8XY2(x, y) => {}
+            Instr::I8XY3(x, y) => {}
+            Instr::I8XY4(x, y) => {}
+            Instr::I8XY5(x, y) => {}
+            Instr::I8XY6(x, y) => {}
+            Instr::I8XY7(x, y) => {}
+            Instr::I8XYE(x, y) => {}
+            Instr::I9XY0(x, y) => {}
+            Instr::IANNN(a) => {}
+            Instr::IBNNN(a) => {}
+            Instr::ICNNN(x, b) => {}
+            Instr::IDXYN(x, y, n) => {}
+            Instr::IEX9E(x) => {}
+            Instr::IEXA1(x) => {}
+            Instr::IFX07(x) => {}
+            Instr::IFX0A(x) => {}
+            Instr::IFX15(x) => {}
+            Instr::IFX18(x) => {}
+            Instr::IFX1E(x) => {}
+            Instr::IFX29(x) => {}
+            Instr::IFX33(x) => {}
+            Instr::IFX55(x) => {}
+            Instr::IFX65(x) => {}
+        }
+    }
 }
