@@ -41,9 +41,7 @@ impl Chip8 {
             Instr::I0NNN(a) => {}
             Instr::I00E0 => {}
             Instr::I00EE => {}
-            Instr::I1NNN(a) => {
-                self.pc = a;
-            }
+            Instr::I1NNN(a) => self.pc = a,
             Instr::I2NNN(a) => {}
             Instr::I3XNN(x, b) => {}
             Instr::I4XNN(x, b) => {}
@@ -76,7 +74,7 @@ impl Chip8 {
             }
             Instr::I9XY0(x, y) => {}
             Instr::IANNN(a) => {}
-            Instr::IBNNN(a) => {}
+            Instr::IBNNN(a) => self.pc = a + (self.V[0] as u16),
             Instr::ICXNN(x, b) => {
                 let r: u8 = rand::thread_rng().gen();
                 self.V[x] = r & b;
