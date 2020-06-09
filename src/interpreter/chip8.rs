@@ -5,8 +5,10 @@ use rand::Rng;
 const MEM_SIZE: usize = 0x1000;
 const N_REGISTERS: usize = 16;
 const STACK_DEPTH: usize = 12;
+const PROGRAM_START: usize = 0x200;
 const WIDTH: usize = 64;
 const HEIGHT: usize = 32;
+const N_KEYS: usize = 16;
 const F: usize = 0xF;
 
 pub struct Chip8 {
@@ -20,6 +22,9 @@ pub struct Chip8 {
 
     delay_timer: u16, // The delay timer
     sound_timer: u16, // The sound timer
+
+    display: [u8; WIDTH * HEIGHT], // The display
+    keys: [u8; N_KEYS],            // The keys (include here?)
 }
 
 impl Chip8 {
@@ -29,10 +34,15 @@ impl Chip8 {
             V: [0; N_REGISTERS],
             I: 0,
             stack: [0; STACK_DEPTH],
-            pc: 0,
+
+            pc: PROGRAM_START,
             sp: 0,
+
             delay_timer: 0,
             sound_timer: 0,
+
+            display: [0; WIDTH * HEIGHT],
+            keys: [0; N_KEYS], // Not actually initialized like this
         }
     }
 
