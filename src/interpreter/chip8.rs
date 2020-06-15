@@ -5,11 +5,20 @@ use rand::Rng;
 const MEM_SIZE: usize = 0x1000;
 const N_REGISTERS: usize = 16;
 const STACK_DEPTH: usize = 12;
-const PROGRAM_START: usize = 0x200;
+const PROGRAM_START: u16 = 0x200;
 const WIDTH: usize = 64;
 const HEIGHT: usize = 32;
 const N_KEYS: usize = 16;
 const F: usize = 0xF;
+
+const FONTSET_SIZE: usize = 80;
+const FONTSET: [u8; FONTSET_SIZE] = [
+    0xF0, 0x90, 0x90, 0x90, 0xF0, 0x20, 0x60, 0x20, 0x20, 0x70, 0xF0, 0x10, 0xF0, 0x80, 0xF0, 0xF0,
+    0x10, 0xF0, 0x10, 0xF0, 0x90, 0x90, 0xF0, 0x10, 0x10, 0xF0, 0x80, 0xF0, 0x10, 0xF0, 0xF0, 0x80,
+    0xF0, 0x90, 0xF0, 0xF0, 0x10, 0x20, 0x40, 0x40, 0xF0, 0x90, 0xF0, 0x90, 0xF0, 0xF0, 0x90, 0xF0,
+    0x10, 0xF0, 0xF0, 0x90, 0xF0, 0x90, 0x90, 0xE0, 0x90, 0xE0, 0x90, 0xE0, 0xF0, 0x80, 0x80, 0x80,
+    0xF0, 0xE0, 0x90, 0x90, 0x90, 0xE0, 0xF0, 0x80, 0xF0, 0x80, 0xF0, 0xF0, 0x80, 0xF0, 0x80, 0x80,
+];
 
 pub struct Chip8 {
     memory: [u8; MEM_SIZE],   // The memory
@@ -29,7 +38,7 @@ pub struct Chip8 {
 
 impl Chip8 {
     pub fn new() -> Self {
-        Self {
+        let mut c8 = Self {
             memory: [0; MEM_SIZE],
             V: [0; N_REGISTERS],
             I: 0,
@@ -43,6 +52,24 @@ impl Chip8 {
 
             display: [0; WIDTH * HEIGHT],
             keys: [0; N_KEYS], // Not actually initialized like this
+        };
+        c8.install_fontset();
+        c8
+    }
+
+    pub fn memory_dump(&self) {
+        let chars_per_line = 200;
+        for i in 0..self.memory.len() - 4000 {
+            for j in 0..chars_per_line {
+                print!("{:x}", self.memory[i]);
+            }
+            println!("");
+        }
+    }
+
+    fn install_fontset(&mut self) {
+        for i in 0..FONTSET.len() {
+            self.memory[i] = FONTSET[i];
         }
     }
 
