@@ -43,3 +43,9 @@ pub enum Instruction {
     IFX55(Vx),          // FX55
     IFX65(Vx),          // FX65
 }
+
+impl Instruction {
+    pub fn get_instr_from_parts(opcode: u8, jmp: u8, x: u8, y: u8, nn: u8) -> Self {
+        match opcode {}
+    }
+}

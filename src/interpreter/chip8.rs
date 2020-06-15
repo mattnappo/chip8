@@ -21,6 +21,21 @@ const FONTSET: [u8; FONTSET_SIZE] = [
     0xF0, 0xE0, 0x90, 0x90, 0x90, 0xE0, 0xF0, 0x80, 0xF0, 0x80, 0xF0, 0xF0, 0x80, 0xF0, 0x80, 0x80,
 ];
 
+enum Pixel {
+    ON,
+    OFF,
+}
+
+impl Pixel {
+    fn get_bit(&self) -> u8 {
+        match self {
+            ON => 1,
+            OFF => 0,
+        }
+    }
+}
+
+// Chip8 is the struct that represents a single CHIP-8 interpreter.
 pub struct Chip8 {
     pub memory: [u8; MEM_SIZE], // The memory
     V: [u8; N_REGISTERS],       // The general purpose registers
@@ -33,11 +48,12 @@ pub struct Chip8 {
     delay_timer: u16, // The delay timer
     sound_timer: u16, // The sound timer
 
-    display: [u8; WIDTH * HEIGHT], // The display
-    keys: [u8; N_KEYS],            // The keys (include here?)
+    display: [Pixel; WIDTH * HEIGHT], // The display
+    keys: [u8; N_KEYS],               // The keys (include here?)
 }
 
 impl Chip8 {
+    // new constructs a new CHIP-8 interpreter.
     pub fn new() -> Self {
         let mut c8 = Self {
             memory: [0; MEM_SIZE],
@@ -51,19 +67,21 @@ impl Chip8 {
             delay_timer: 0,
             sound_timer: 0,
 
-            display: [0; WIDTH * HEIGHT],
+            display: [Pixel::OFF; WIDTH * HEIGHT],
             keys: [0; N_KEYS], // Not actually initialized like this
         };
         c8.install_fontset();
         c8
     }
 
+    // install_fontset loads the font ROM into memory.
     fn install_fontset(&mut self) {
         for i in 0..FONTSET.len() {
             self.memory[i] = FONTSET[i];
         }
     }
 
+    // memory_dump prints a certain amount of bytes of the system memory.
     pub fn memory_dump(&self, n_bytes: usize) {
         let chars_per_line = 200;
         for i in 0..n_bytes {
@@ -81,17 +99,26 @@ impl Chip8 {
     pub fn load_rom(&mut self, filename: &str) -> Result<(), std::io::Error> {
         let rom = fs::read(filename)?;
         for i in 0..rom.len() {
-            // println!("ROM byte {}: {:x}", i, rom[i]);
             self.memory[i + PROGRAM_START as usize] = rom[i];
-            // println!(
-            //     "MEM byte {}: {:x}",
-            //     i + PROGRAM_START as usize,
-            //     self.memory[i + PROGRAM_START as usize]
-            // );
         }
         Ok(())
     }
 
+    // execute executes the virtual machine as it is in its current state.
+    pub fn execute(&mut self) {
+        while self.pc < self.memory.len() as u16 {
+            let opcode = self.memory[self.pc] << 8 | self.memory[self.pc + 1];
+            let jmp = opcode & 0x0FF;
+            let x = (opcode & 0x0F00) >> 8;
+            let y = (opcode & 0x00F0) >> 4;
+            let nn = opcode & 0x00FF;
+
+            let instr = Instr::get_instr_from_parts(opcode, jmp, x, y, nn);
+            self.execute_instruction(instr);
+        }
+    }
+
+    // execute_instruction executes a single instruction.
     pub fn execute_instruction(&mut self, i: Instr) {
         match i {
             Instr::I0NNN(a) => {}
