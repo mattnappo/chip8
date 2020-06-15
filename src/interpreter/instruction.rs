@@ -45,7 +45,29 @@ pub enum Instruction {
 }
 
 impl Instruction {
-    pub fn get_instr_from_parts(opcode: u8, jmp: u8, x: u8, y: u8, nn: u8) -> Self {
-        match opcode {}
+    pub fn get_instr_from_parts(opcode: u8, jmp: u16, x: u8, y: u8, nn: u8) -> Self {
+        match opcode & 0xF000 {
+            0x0000 => match opcode {
+                0x00E0 => Instruction::I00E0,
+                0x00EE => Instruction::I00EE,
+            },
+            0x1000 => Instruction::I1NNN(jmp),
+            0x2000 => Instruction::I2NNN(jmp),
+            0x3000 => Instruction::I3XNN(x, nn),
+            0x4000 => Instruction::I4XNN(x, nn),
+            0x5000 => Instruction::I5XY0(x, y),
+            0x6000 => Instruction::I6XNN(x, nn),
+            0x7000 => Instruction::I7XNN(x, nn),
+            0x8000 => match opcode & 0x000F {
+                0x0000 => Instruction::I8XY0(x, y),
+                0x0001 => Instruction::I8XY1(x, y),
+                0x0002 => Instruction::I8XY2(x, y),
+                0x0003 => Instruction::I8XY3(x, y),
+                0x0004 => Instruction::I8XY4(x, y),
+                0x0005 => Instruction::I8XY5(x, y),
+                0x0006 => Instruction::I8XY6(x, y),
+                0x0007 => Instruction::I8XY7(x, y),
+                0x000E => Instruction::I8XYE(x, y),
+            }
     }
 }

@@ -108,10 +108,10 @@ impl Chip8 {
     pub fn execute(&mut self) {
         while self.pc < self.memory.len() as u16 {
             let opcode = self.memory[self.pc] << 8 | self.memory[self.pc + 1];
-            let jmp = opcode & 0x0FF;
-            let x = (opcode & 0x0F00) >> 8;
-            let y = (opcode & 0x00F0) >> 4;
-            let nn = opcode & 0x00FF;
+            let jmp: u16 = opcode & 0x0FF;
+            let x: u8 = (opcode & 0x0F00) >> 8;
+            let y: u8 = (opcode & 0x00F0) >> 4;
+            let nn: u8 = opcode & 0x00FF;
 
             let instr = Instr::get_instr_from_parts(opcode, jmp, x, y, nn);
             self.execute_instruction(instr);
