@@ -1,6 +1,7 @@
 use super::instruction::Instruction as Instr;
 use crate::arithmetic;
 use rand::Rng;
+use std::fs;
 
 const MEM_SIZE: usize = 0x1000;
 const N_REGISTERS: usize = 16;
@@ -21,10 +22,10 @@ const FONTSET: [u8; FONTSET_SIZE] = [
 ];
 
 pub struct Chip8 {
-    memory: [u8; MEM_SIZE],   // The memory
-    V: [u8; N_REGISTERS],     // The general purpose registers
-    I: u16,                   // The I register
-    stack: [u8; STACK_DEPTH], // The stack
+    pub memory: [u8; MEM_SIZE], // The memory
+    V: [u8; N_REGISTERS],       // The general purpose registers
+    I: u16,                     // The I register
+    stack: [u8; STACK_DEPTH],   // The stack
 
     pc: u16, // The program counter
     sp: u8,  // The stack pointer
@@ -57,9 +58,15 @@ impl Chip8 {
         c8
     }
 
-    pub fn memory_dump(&self) {
+    fn install_fontset(&mut self) {
+        for i in 0..FONTSET.len() {
+            self.memory[i] = FONTSET[i];
+        }
+    }
+
+    pub fn memory_dump(&self, n_bytes: usize) {
         let chars_per_line = 200;
-        for i in 0..self.memory.len() - 4000 {
+        for i in 0..n_bytes {
             for j in 0..chars_per_line {
                 print!("{:x}", self.memory[i]);
             }
@@ -67,10 +74,22 @@ impl Chip8 {
         }
     }
 
-    fn install_fontset(&mut self) {
-        for i in 0..FONTSET.len() {
-            self.memory[i] = FONTSET[i];
+    // parse_file will parse a CHIP-8 source code file and load it into the machine.
+    pub fn parse_file(&mut self, filename: &str) {}
+
+    // load_rom loads a ROM given the filename of the ROM and loads it into the machine.
+    pub fn load_rom(&mut self, filename: &str) -> Result<(), std::io::Error> {
+        let rom = fs::read(filename)?;
+        for i in 0..rom.len() {
+            // println!("ROM byte {}: {:x}", i, rom[i]);
+            self.memory[i + PROGRAM_START as usize] = rom[i];
+            // println!(
+            //     "MEM byte {}: {:x}",
+            //     i + PROGRAM_START as usize,
+            //     self.memory[i + PROGRAM_START as usize]
+            // );
         }
+        Ok(())
     }
 
     pub fn execute_instruction(&mut self, i: Instr) {
