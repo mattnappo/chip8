@@ -1,3 +1,5 @@
+use std::fmt::{Display, Formatter, Result};
+
 type Addr = u16;
 type Vx = usize;
 type Vy = usize;
@@ -5,6 +7,15 @@ type Byte = u8;
 type Nib = u8;
 
 // lsb = least significant bit
+
+// UnsupportedInstruction is thrown when an unsupported instruction was used.
+pub struct UnsupportedInstruction;
+
+impl std::fmt::Display for UnsupportedInstruction {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "that is an unsupported instruction")
+    }
+}
 
 pub enum Instruction {
     I0NNN(Addr),        // 0NNN
@@ -42,14 +53,23 @@ pub enum Instruction {
     IFX33(Vx),          // FX33
     IFX55(Vx),          // FX55
     IFX65(Vx),          // FX65
+
+    UNSUPPORTED, // Represents an unsupported instruction
 }
 
 impl Instruction {
-    pub fn get_instr_from_parts(opcode: u8, jmp: u16, x: u8, y: u8, nn: u8) -> Self {
-        match opcode & 0xF000 {
+    pub fn get_instr_from_parts(
+        opcode: u8,
+        jmp: u16,
+        x: usize,
+        y: usize,
+        nn: u8,
+    ) -> Self {
+        return match opcode & 0xF000 {
             0x0000 => match opcode {
                 0x00E0 => Instruction::I00E0,
                 0x00EE => Instruction::I00EE,
+                _ => Instruction::UNSUPPORTED,
             },
             0x1000 => Instruction::I1NNN(jmp),
             0x2000 => Instruction::I2NNN(jmp),
@@ -68,6 +88,31 @@ impl Instruction {
                 0x0006 => Instruction::I8XY6(x, y),
                 0x0007 => Instruction::I8XY7(x, y),
                 0x000E => Instruction::I8XYE(x, y),
-            }
+                _ => Instruction::UNSUPPORTED,
+            },
+            0x9000 => Instruction::I9XY0(x, y),
+            0xA000 => Instruction::IANNN(jmp),
+            0xB000 => Instruction::IBNNN(jmp),
+            0xC000 => Instruction::ICXNN(x, nn),
+            0xD000 => Instruction::IDXYN(x, y, opcode & 0x000F),
+            0xE000 => match opcode & 0x000F {
+                0x000E => Instruction::IEX9E(x),
+                0x0001 => Instruction::IEXA1(x),
+                _ => Instruction::UNSUPPORTED,
+            },
+            0xF000 => match opcode & 0x00FF {
+                0x0007 => Instruction::IFX07(x),
+                0x000A => Instruction::IFX0A(x),
+                0x0015 => Instruction::IFX15(x),
+                0x0018 => Instruction::IFX18(x),
+                0x001E => Instruction::IFX1E(x),
+                0x0029 => Instruction::IFX29(x),
+                0x0033 => Instruction::IFX33(x),
+                0x0055 => Instruction::IFX55(x),
+                0x0065 => Instruction::IFX65(x),
+                _ => Instruction::UNSUPPORTED,
+            },
+            _ => Instruction::UNSUPPORTED,
+        };
     }
 }

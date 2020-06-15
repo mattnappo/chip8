@@ -1,6 +1,9 @@
-use super::instruction::Instruction as Instr;
+use super::instruction::{Instruction, UnsupportedInstruction};
+use super::pixel;
 use crate::arithmetic;
 use rand::Rng;
+use std::convert::TryInto;
+use std::error;
 use std::fs;
 
 const MEM_SIZE: usize = 0x1000;
@@ -14,26 +17,14 @@ const F: usize = 0xF;
 
 const FONTSET_SIZE: usize = 80;
 const FONTSET: [u8; FONTSET_SIZE] = [
-    0xF0, 0x90, 0x90, 0x90, 0xF0, 0x20, 0x60, 0x20, 0x20, 0x70, 0xF0, 0x10, 0xF0, 0x80, 0xF0, 0xF0,
-    0x10, 0xF0, 0x10, 0xF0, 0x90, 0x90, 0xF0, 0x10, 0x10, 0xF0, 0x80, 0xF0, 0x10, 0xF0, 0xF0, 0x80,
-    0xF0, 0x90, 0xF0, 0xF0, 0x10, 0x20, 0x40, 0x40, 0xF0, 0x90, 0xF0, 0x90, 0xF0, 0xF0, 0x90, 0xF0,
-    0x10, 0xF0, 0xF0, 0x90, 0xF0, 0x90, 0x90, 0xE0, 0x90, 0xE0, 0x90, 0xE0, 0xF0, 0x80, 0x80, 0x80,
-    0xF0, 0xE0, 0x90, 0x90, 0x90, 0xE0, 0xF0, 0x80, 0xF0, 0x80, 0xF0, 0xF0, 0x80, 0xF0, 0x80, 0x80,
+    0xF0, 0x90, 0x90, 0x90, 0xF0, 0x20, 0x60, 0x20, 0x20, 0x70, 0xF0, 0x10,
+    0xF0, 0x80, 0xF0, 0xF0, 0x10, 0xF0, 0x10, 0xF0, 0x90, 0x90, 0xF0, 0x10,
+    0x10, 0xF0, 0x80, 0xF0, 0x10, 0xF0, 0xF0, 0x80, 0xF0, 0x90, 0xF0, 0xF0,
+    0x10, 0x20, 0x40, 0x40, 0xF0, 0x90, 0xF0, 0x90, 0xF0, 0xF0, 0x90, 0xF0,
+    0x10, 0xF0, 0xF0, 0x90, 0xF0, 0x90, 0x90, 0xE0, 0x90, 0xE0, 0x90, 0xE0,
+    0xF0, 0x80, 0x80, 0x80, 0xF0, 0xE0, 0x90, 0x90, 0x90, 0xE0, 0xF0, 0x80,
+    0xF0, 0x80, 0xF0, 0xF0, 0x80, 0xF0, 0x80, 0x80,
 ];
-
-enum Pixel {
-    ON,
-    OFF,
-}
-
-impl Pixel {
-    fn get_bit(&self) -> u8 {
-        match self {
-            ON => 1,
-            OFF => 0,
-        }
-    }
-}
 
 // Chip8 is the struct that represents a single CHIP-8 interpreter.
 pub struct Chip8 {
@@ -48,8 +39,8 @@ pub struct Chip8 {
     delay_timer: u16, // The delay timer
     sound_timer: u16, // The sound timer
 
-    display: [Pixel; WIDTH * HEIGHT], // The display
-    keys: [u8; N_KEYS],               // The keys (include here?)
+    display: [u8; WIDTH * HEIGHT], // The display
+    keys: [u8; N_KEYS],            // The keys (include here?)
 }
 
 impl Chip8 {
@@ -67,7 +58,7 @@ impl Chip8 {
             delay_timer: 0,
             sound_timer: 0,
 
-            display: [Pixel::OFF; WIDTH * HEIGHT],
+            display: [pixel::Pixel::OFF.bit(); WIDTH * HEIGHT],
             keys: [0; N_KEYS], // Not actually initialized like this
         };
         c8.install_fontset();
@@ -107,73 +98,109 @@ impl Chip8 {
     // execute executes the virtual machine as it is in its current state.
     pub fn execute(&mut self) {
         while self.pc < self.memory.len() as u16 {
-            let opcode = self.memory[self.pc] << 8 | self.memory[self.pc + 1];
-            let jmp: u16 = opcode & 0x0FF;
-            let x: u8 = (opcode & 0x0F00) >> 8;
-            let y: u8 = (opcode & 0x00F0) >> 4;
+            let opcode = self.memory[self.pc as usize] << 8
+                | self.memory[self.pc as usize + 1];
+            let jmp: u16 = (opcode & 0x0FF).into(); // NNN (the jump address)
+            let x: usize = ((opcode & 0x0F00) >> 8).into();
+            let y: usize = ((opcode & 0x00F0) >> 4).into();
             let nn: u8 = opcode & 0x00FF;
 
-            let instr = Instr::get_instr_from_parts(opcode, jmp, x, y, nn);
+            let instr =
+                Instruction::get_instr_from_parts(opcode, jmp, x, y, nn);
             self.execute_instruction(instr);
         }
     }
 
     // execute_instruction executes a single instruction.
-    pub fn execute_instruction(&mut self, i: Instr) {
+    pub fn execute_instruction(
+        &mut self,
+        i: Instruction,
+    ) -> Result<(), UnsupportedInstruction> {
+        let mut should_jump = false;
         match i {
-            Instr::I0NNN(a) => {}
-            Instr::I00E0 => {}
-            Instr::I00EE => {}
-            Instr::I1NNN(a) => self.pc = a,
-            Instr::I2NNN(a) => {}
-            Instr::I3XNN(x, b) => {}
-            Instr::I4XNN(x, b) => {}
-            Instr::I5XY0(x, y) => {}
-            Instr::I6XNN(x, b) => self.V[x] = b,
-            Instr::I7XNN(x, b) => self.V[x] += b,
-            Instr::I8XY0(x, y) => self.V[x] = self.V[y],
-            Instr::I8XY1(x, y) => self.V[x] |= self.V[y],
-            Instr::I8XY2(x, y) => self.V[x] &= self.V[y],
-            Instr::I8XY3(x, y) => self.V[x] ^= self.V[y],
-            Instr::I8XY4(x, y) => {
+            Instruction::I0NNN(a) => {} // Not really implemented
+            Instruction::I00E0 => {
+                // Clear the display
+                for i in 0..self.display.len() {
+                    self.display[i] = pixel::Pixel::OFF.bit();
+                }
+            }
+            Instruction::I00EE => {
+                // Return from subroutine
+                if self.stack[self.sp as usize] == 0 {
+                    panic!("no value to return to on the stack");
+                }
+                self.pc = self.stack[self.sp as usize].into(); // Pop off the stack
+                self.stack[self.sp as usize] = 0; // Remove the value
+                if self.sp > 0 {
+                    self.sp -= 1; // Update the stack pointer
+                }
+            }
+            Instruction::I1NNN(a) => {
+                // Jump to address NNN
+                self.pc = a;
+                should_jump = true;
+            }
+            Instruction::I2NNN(a) => {
+                // Call suborutine at address NNN
+                if self.stack[self.sp as usize] != 0 {
+                    self.sp += 1;
+                }
+                self.stack[self.sp as usize] = self.pc.try_into().unwrap(); // Push current address to the stack
+                self.pc = a;
+                should_jump = true;
+            }
+            Instruction::I3XNN(x, b) => {}
+            Instruction::I4XNN(x, b) => {}
+            Instruction::I5XY0(x, y) => {}
+            Instruction::I6XNN(x, b) => self.V[x] = b,
+            Instruction::I7XNN(x, b) => self.V[x] += b,
+            Instruction::I8XY0(x, y) => self.V[x] = self.V[y],
+            Instruction::I8XY1(x, y) => self.V[x] |= self.V[y],
+            Instruction::I8XY2(x, y) => self.V[x] &= self.V[y],
+            Instruction::I8XY3(x, y) => self.V[x] ^= self.V[y],
+            Instruction::I8XY4(x, y) => {
                 self.V[F] = arithmetic::check_carry(&self.V[x], &self.V[y]);
                 self.V[x] += self.V[y];
             }
-            Instr::I8XY5(x, y) => {
+            Instruction::I8XY5(x, y) => {
                 self.V[F] = arithmetic::check_borrow(&self.V[x], &self.V[y]);
                 self.V[x] -= self.V[y];
             }
-            Instr::I8XY6(x, y) => {
+            Instruction::I8XY6(x, y) => {
                 self.V[F] = arithmetic::get_lsb(&self.V[y]);
                 self.V[x] = self.V[y] >> 1;
             }
-            Instr::I8XY7(x, y) => {
+            Instruction::I8XY7(x, y) => {
                 self.V[F] = arithmetic::check_borrow(&self.V[x], &self.V[y]);
                 self.V[x] = self.V[y] - self.V[x];
             }
-            Instr::I8XYE(x, y) => {
+            Instruction::I8XYE(x, y) => {
                 self.V[F] = arithmetic::get_msb(&self.V[y]);
                 self.V[x] = self.V[y] << 1;
             }
-            Instr::I9XY0(x, y) => {}
-            Instr::IANNN(a) => {}
-            Instr::IBNNN(a) => self.pc = a + (self.V[0] as u16),
-            Instr::ICXNN(x, b) => {
+            Instruction::I9XY0(x, y) => {}
+            Instruction::IANNN(a) => {}
+            Instruction::IBNNN(a) => self.pc = a + (self.V[0] as u16),
+            Instruction::ICXNN(x, b) => {
                 let r: u8 = rand::thread_rng().gen();
                 self.V[x] = r & b;
             }
-            Instr::IDXYN(x, y, n) => {}
-            Instr::IEX9E(x) => {}
-            Instr::IEXA1(x) => {}
-            Instr::IFX07(x) => {}
-            Instr::IFX0A(x) => {}
-            Instr::IFX15(x) => {}
-            Instr::IFX18(x) => {}
-            Instr::IFX1E(x) => {}
-            Instr::IFX29(x) => {}
-            Instr::IFX33(x) => {}
-            Instr::IFX55(x) => {}
-            Instr::IFX65(x) => {}
-        }
+            Instruction::IDXYN(x, y, n) => {}
+            Instruction::IEX9E(x) => {}
+            Instruction::IEXA1(x) => {}
+            Instruction::IFX07(x) => {}
+            Instruction::IFX0A(x) => {}
+            Instruction::IFX15(x) => {}
+            Instruction::IFX18(x) => {}
+            Instruction::IFX1E(x) => {}
+            Instruction::IFX29(x) => {}
+            Instruction::IFX33(x) => {}
+            Instruction::IFX55(x) => {}
+            Instruction::IFX65(x) => {}
+
+            Instruction::UNSUPPORTED => return Err(UnsupportedInstruction),
+        };
+        Ok(())
     }
 }
