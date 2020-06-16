@@ -11,7 +11,6 @@ const STACK_DEPTH: usize = 12;
 const PROGRAM_START: u16 = 0x200;
 const WIDTH: usize = 64;
 const HEIGHT: usize = 32;
-const N_KEYS: usize = 16;
 const F: usize = 0xF;
 
 const FONTSET_SIZE: usize = 80;
@@ -23,6 +22,12 @@ const FONTSET: [u8; FONTSET_SIZE] = [
     0x10, 0xF0, 0xF0, 0x90, 0xF0, 0x90, 0x90, 0xE0, 0x90, 0xE0, 0x90, 0xE0,
     0xF0, 0x80, 0x80, 0x80, 0xF0, 0xE0, 0x90, 0x90, 0x90, 0xE0, 0xF0, 0x80,
     0xF0, 0x80, 0xF0, 0xF0, 0x80, 0xF0, 0x80, 0x80,
+];
+
+const N_KEYS: usize = 16;
+const KEYS: [u8; N_KEYS] = [
+    0x1, 0x2, 0x3, 0xC, 0x4, 0x5, 0x6, 0xD, 0x9, 0x8, 0x9, 0xE, 0xA, 0x0, 0xB,
+    0xF,
 ];
 
 const OFF: u8 = 0x0;
@@ -42,7 +47,8 @@ pub struct Chip8 {
     sound_timer: u16, // The sound timer
 
     display: [u8; WIDTH * HEIGHT], // The display
-    keys: [u8; N_KEYS],            // The keys (include here?)
+    keys: [u8; N_KEYS],            // The keys
+    key: Option<u8>,               // The current key being pressed
 }
 
 impl Chip8 {
@@ -62,15 +68,25 @@ impl Chip8 {
 
             display: [OFF; WIDTH * HEIGHT],
             keys: [0; N_KEYS], // Not actually initialized like this
+            key: None,
         };
         c8.install_fontset();
+        c8.init_keys();
         c8
     }
 
     // install_fontset loads the font ROM into memory.
     fn install_fontset(&mut self) {
         for i in 0..FONTSET.len() {
+            println!("fontset[{}] = {:x}", i, FONTSET[i]);
             self.memory[i] = FONTSET[i];
+        }
+    }
+
+    // init_keys initializes the keypad.
+    fn init_keys(&mut self) {
+        for i in 0..KEYS.len() {
+            self.keys[i] = KEYS[i];
         }
     }
 
@@ -106,25 +122,40 @@ impl Chip8 {
     // execute executes the virtual machine as it is in its current state.
     pub fn execute(&mut self) {
         while self.pc < self.memory.len() as u16 {
-            println!("program counter: {}", self.pc);
-            // The only reason why these are u16s is because it will make them easier
-            // to deal with when determining the instruction.
-            let current_instr: u16 = self.memory[self.pc as usize].into();
-            let next_instr: u16 = self.memory[self.pc as usize + 1].into();
-            let opcode: u16 = (current_instr << 8) | next_instr;
-            let jmp: u16 = (opcode & 0x0FF).into(); // NNN (the jump address)
-            let x: usize = ((opcode & 0x0F00) >> 8).into();
-            let y: usize = ((opcode & 0x00F0) >> 4).into();
-            let nn: u16 = opcode & 0x00FF;
-
-            let instr =
-                Instruction::get_instr_from_parts(opcode, jmp, x, y, nn);
-            self.execute_instruction(instr);
+            self.cycle();
         }
     }
 
+    // cycle will step the virtual machine once.
+    pub fn cycle(&mut self) {
+        // Count down the timers
+        if self.delay_timer > 0 {
+            self.delay_timer -= 1;
+        }
+        if self.sound_timer > 0 {
+            self.sound_timer -= 1;
+        }
+
+        // println!("program counter: {}", self.pc);
+
+        // Fetch an instruction
+        // The only reason why these are u16s is because it will make them easier
+        // to deal with when determining the instruction.
+        let current_instr: u16 = self.memory[self.pc as usize].into();
+        let next_instr: u16 = self.memory[self.pc as usize + 1].into();
+        let opcode: u16 = (current_instr << 8) | next_instr;
+        let jmp: u16 = (opcode & 0x0FF).into(); // NNN (the jump address)
+        let x: usize = ((opcode & 0x0F00) >> 8).into();
+        let y: usize = ((opcode & 0x00F0) >> 4).into();
+        let nn: u16 = opcode & 0x00FF;
+
+        // Execute the fetched instruction
+        let instr = Instruction::get_instr_from_parts(opcode, jmp, x, y, nn);
+        self.execute_instruction(instr);
+    }
+
     // execute_instruction executes a single instruction.
-    pub fn execute_instruction(
+    fn execute_instruction(
         &mut self,
         i: Instruction,
     ) -> Result<(), ErrUnsupportedInstruction> {
@@ -162,10 +193,25 @@ impl Chip8 {
                 self.pc = a;
                 should_jump = true;
             }
-            Instruction::I3XNN(x, b) => {}
-            Instruction::I4XNN(x, b) => {}
-            Instruction::I5XY0(x, y) => {}
-            Instruction::I6XNN(x, b) => self.V[x] = b,
+            Instruction::I3XNN(x, b) => {
+                if self.V[x] == b {
+                    self.pc += 2;
+                }
+            }
+            Instruction::I4XNN(x, b) => {
+                if self.V[x] != b {
+                    self.pc += 2;
+                }
+            }
+            Instruction::I5XY0(x, y) => {
+                if self.V[x] == self.V[y] {
+                    self.pc += 2;
+                }
+            }
+            Instruction::I6XNN(x, b) => {
+                self.V[x] = b;
+                println!("V[{}] = {}", x, b)
+            }
             Instruction::I7XNN(x, b) => self.V[x] += b,
             Instruction::I8XY0(x, y) => self.V[x] = self.V[y],
             Instruction::I8XY1(x, y) => self.V[x] |= self.V[y],
@@ -191,22 +237,52 @@ impl Chip8 {
                 self.V[F] = arithmetic::get_msb(&self.V[y]);
                 self.V[x] = self.V[y] << 1;
             }
-            Instruction::I9XY0(x, y) => {}
-            Instruction::IANNN(a) => {}
+            Instruction::I9XY0(x, y) => {
+                if self.V[x] != self.V[y] {
+                    self.pc += 2;
+                }
+            }
+            Instruction::IANNN(a) => self.I = a,
             Instruction::IBNNN(a) => self.pc = a + (self.V[0] as u16),
             Instruction::ICXNN(x, b) => {
                 let r: u8 = rand::thread_rng().gen();
                 self.V[x] = r & b;
             }
-            Instruction::IDXYN(x, y, n) => {}
-            Instruction::IEX9E(x) => {}
-            Instruction::IEXA1(x) => {}
-            Instruction::IFX07(x) => {}
-            Instruction::IFX0A(x) => {}
-            Instruction::IFX15(x) => {}
-            Instruction::IFX18(x) => {}
-            Instruction::IFX1E(x) => {}
-            Instruction::IFX29(x) => {}
+            Instruction::IDXYN(x, y, n) => {
+                // Draw sprite at position (Vx, Vy) with N bytes of sprite data starting
+                // at the address stored in I. Set VF to 01 if any set pixels are
+                // changed to unset, and 00 otherwise.
+            }
+            Instruction::IEX9E(x) => match self.key {
+                Some(k) => {
+                    if self.V[x] == k {
+                        self.pc += 2;
+                    }
+                }
+                None => (),
+            },
+            Instruction::IEXA1(x) => match self.key {
+                Some(k) => {
+                    if self.V[x] != k {
+                        self.pc += 2;
+                    }
+                }
+                None => (),
+            },
+            Instruction::IFX07(x) => self.V[x] = self.delay_timer as u8,
+            Instruction::IFX0A(x) => loop {
+                match self.key {
+                    Some(k) => self.V[x] = k,
+                    None => continue,
+                }
+            },
+            Instruction::IFX15(x) => self.delay_timer = self.V[x] as u16,
+            Instruction::IFX18(x) => self.sound_timer = self.V[x] as u16,
+            Instruction::IFX1E(x) => self.I += self.V[x] as u16,
+            Instruction::IFX29(x) => {
+                let sprite: usize = 5 * (self.V[x] + 1);
+                self.I = self.memory[sprite] as u16;
+            }
             Instruction::IFX33(x) => {}
             Instruction::IFX55(x) => {}
             Instruction::IFX65(x) => {}

@@ -14,7 +14,7 @@ fn main() {
     c8.memory_dump(100);
 
     c8.load_rom("roms/TEST.bin").expect("Could not load ROM");
-    c8.memory_dump(250);
+    // c8.memory_dump(250);
 
     c8.execute();
     c8.register_dump();

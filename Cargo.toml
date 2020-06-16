@@ -17,3 +17,4 @@ path = "src/main.rs"
 [dependencies]
 rand = "0.7.3"
 hex = "0.4.2"
+piston_window = "0.98.0"
