@@ -14,6 +14,8 @@ const HEIGHT: usize = 32;
 const F: usize = 0xF;
 
 const FONTSET_SIZE: usize = 80;
+const FONT_HEIGHT: usize = 8;
+const FONT_WIDTH: usize = 5;
 const FONTSET: [u8; FONTSET_SIZE] = [
     0xF0, 0x90, 0x90, 0x90, 0xF0, 0x20, 0x60, 0x20, 0x20, 0x70, 0xF0, 0x10,
     0xF0, 0x80, 0xF0, 0xF0, 0x10, 0xF0, 0x10, 0xF0, 0x90, 0x90, 0xF0, 0x10,
@@ -189,7 +191,7 @@ impl Chip8 {
                 if self.stack[self.sp as usize] != 0 {
                     self.sp += 1;
                 }
-                self.stack[self.sp as usize] = self.pc.try_into().unwrap(); // Push current address to the stack
+                self.stack[self.sp as usize] = self.pc as u8; // Push current address to the stack
                 self.pc = a;
                 should_jump = true;
             }
@@ -252,6 +254,52 @@ impl Chip8 {
                 // Draw sprite at position (Vx, Vy) with N bytes of sprite data starting
                 // at the address stored in I. Set VF to 01 if any set pixels are
                 // changed to unset, and 00 otherwise.
+                self.V[F] = 1;
+                let xpos = self.V[x];
+                let ypos = self.V[y];
+                let mut sprite: Vec<u8> = Vec::new();
+                for i in 0..n {
+                    sprite.push(self.memory[self.I as usize + i as usize]);
+                }
+
+                for i in 0..FONT_HEIGHT {
+                    for j in 0..FONT_WIDTH {}
+                }
+
+                /*
+                println!("FONT: ");
+                for byte in sprite {
+                    println!("{:#8b}", byte);
+                }
+                */
+
+                let mut yi = ypos as usize;
+                for byte in sprite {
+                    for bit in 0..8 {
+                        let mut xi = (xpos + (0x7 - bit)) as usize;
+                        if xi > 0x3F {
+                            xi = 0x45;
+                        }
+                        if yi > 0x1F {
+                            yi -= 0x20;
+                        }
+
+                        let mut flipped = OFF;
+                        if (byte >> bit) & 1 == 1 {
+                            flipped = ON;
+                        }
+
+                        if flipped != self.display[WIDTH * yi + xi] {
+                            self.display[WIDTH * yi + xi] = ON;
+                        } else {
+                            if self.display[WIDTH * yi + xi] == ON {
+                                self.V[F] = 1;
+                            }
+                            self.display[WIDTH * yi + xi] = OFF;
+                        }
+                    }
+                    yi += 1;
+                }
             }
             Instruction::IEX9E(x) => match self.key {
                 Some(k) => {
@@ -280,25 +328,25 @@ impl Chip8 {
             Instruction::IFX18(x) => self.sound_timer = self.V[x] as u16,
             Instruction::IFX1E(x) => self.I += self.V[x] as u16,
             Instruction::IFX29(x) => {
-                let sprite: usize = 5 * (self.V[x] + 1);
+                let sprite: usize = (5 * (self.V[x] + 1)).into();
                 self.I = self.memory[sprite] as u16;
             }
             Instruction::IFX33(x) => {
-                self.memory[self.I] = self.V[x] / 100;
-                self.memory[self.I + 1] = (self.V[x] / 10) % 10;
-                self.memory[self.I + 2] = self.V[x] % 10;
+                self.memory[self.I as usize] = self.V[x] / 100;
+                self.memory[self.I as usize + 1] = (self.V[x] / 10) % 10;
+                self.memory[self.I as usize + 2] = self.V[x] % 10;
             }
             Instruction::IFX55(x) => {
                 for i in 0..(x + 1) {
-                    self.memory[self.I + i] = self.V[i];
+                    self.memory[self.I as usize + i] = self.V[i];
                 }
-                self.I += x + 1;
+                self.I += (x + 1) as u16;
             }
             Instruction::IFX65(x) => {
                 for i in 0..(x + 1) {
-                    self.V[i] = self.memory[self.I + i];
+                    self.V[i] = self.memory[self.I as usize + i];
                 }
-                self.I += x + 1;
+                self.I += (x + 1) as u16;
             }
 
             Instruction::UNSUPPORTED => return Err(ErrUnsupportedInstruction),
