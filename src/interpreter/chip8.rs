@@ -1,3 +1,4 @@
+use super::super::gfx;
 use super::instruction::{ErrUnsupportedInstruction, Instruction};
 use crate::arithmetic;
 use rand::Rng;
@@ -9,8 +10,8 @@ const MEM_SIZE: usize = 0x1000;
 const N_REGISTERS: usize = 16;
 const STACK_DEPTH: usize = 12;
 const PROGRAM_START: u16 = 0x200;
-const WIDTH: usize = 64;
-const HEIGHT: usize = 32;
+pub const WIDTH: usize = 64;
+pub const HEIGHT: usize = 32;
 const F: usize = 0xF;
 
 const FONTSET_SIZE: usize = 80;
@@ -32,8 +33,8 @@ const KEYS: [u8; N_KEYS] = [
     0xF,
 ];
 
-const OFF: u8 = 0x0;
-const ON: u8 = 0x1;
+pub const OFF: u8 = 0x0;
+pub const ON: u8 = 0x1;
 
 // Chip8 is the struct that represents a single CHIP-8 interpreter.
 pub struct Chip8 {
@@ -48,9 +49,9 @@ pub struct Chip8 {
     delay_timer: u16, // The delay timer
     sound_timer: u16, // The sound timer
 
-    display: [u8; WIDTH * HEIGHT], // The display
-    keys: [u8; N_KEYS],            // The keys
-    key: Option<u8>,               // The current key being pressed
+    display: gfx::Display,
+    keys: [u8; N_KEYS], // The keys
+    key: Option<u8>,    // The current key being pressed
 }
 
 impl Chip8 {
@@ -68,7 +69,7 @@ impl Chip8 {
             delay_timer: 0,
             sound_timer: 0,
 
-            display: [OFF; WIDTH * HEIGHT],
+            display: gfx::Display::new(),
             keys: [0; N_KEYS], // Not actually initialized like this
             key: None,
         };
@@ -166,8 +167,8 @@ impl Chip8 {
             Instruction::I0NNN(a) => {} // Not really implemented
             Instruction::I00E0 => {
                 // Clear the display
-                for i in 0..self.display.len() {
-                    self.display[i] = OFF;
+                for i in 0..self.display.pixels.len() {
+                    self.display.pixels[i] = OFF;
                 }
             }
             Instruction::I00EE => {
@@ -268,8 +269,8 @@ impl Chip8 {
 
                 /*
                 println!("FONT: ");
-                for byte in sprite {
-                    println!("{:#8b}", byte);
+                for byte in sprite.clone() {
+                    println!("{:#018b}", byte);
                 }
                 */
 
@@ -289,13 +290,13 @@ impl Chip8 {
                             flipped = ON;
                         }
 
-                        if flipped != self.display[WIDTH * yi + xi] {
-                            self.display[WIDTH * yi + xi] = ON;
+                        if flipped != self.display.pixels[WIDTH * yi + xi] {
+                            self.display.pixels[WIDTH * yi + xi] = ON;
                         } else {
-                            if self.display[WIDTH * yi + xi] == ON {
+                            if self.display.pixels[WIDTH * yi + xi] == ON {
                                 self.V[F] = 1;
                             }
-                            self.display[WIDTH * yi + xi] = OFF;
+                            self.display.pixels[WIDTH * yi + xi] = OFF;
                         }
                     }
                     yi += 1;
