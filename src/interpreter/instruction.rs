@@ -8,12 +8,12 @@ type Nib = u8;
 
 // lsb = least significant bit
 
-// UnsupportedInstruction is thrown when an unsupported instruction was used.
-pub struct UnsupportedInstruction;
+// ErrUnsupportedInstruction is thrown when an unsupported instruction was used.
+pub struct ErrUnsupportedInstruction;
 
-impl std::fmt::Display for UnsupportedInstruction {
+impl std::fmt::Display for ErrUnsupportedInstruction {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "that is an unsupported instruction")
+        write!(f, "that's an unsupported instruction")
     }
 }
 
@@ -59,11 +59,11 @@ pub enum Instruction {
 
 impl Instruction {
     pub fn get_instr_from_parts(
-        opcode: u8,
+        opcode: u16,
         jmp: u16,
         x: usize,
         y: usize,
-        nn: u8,
+        nn: u16,
     ) -> Self {
         return match opcode & 0xF000 {
             0x0000 => match opcode {
@@ -73,11 +73,11 @@ impl Instruction {
             },
             0x1000 => Instruction::I1NNN(jmp),
             0x2000 => Instruction::I2NNN(jmp),
-            0x3000 => Instruction::I3XNN(x, nn),
-            0x4000 => Instruction::I4XNN(x, nn),
+            0x3000 => Instruction::I3XNN(x, nn as u8),
+            0x4000 => Instruction::I4XNN(x, nn as u8),
             0x5000 => Instruction::I5XY0(x, y),
-            0x6000 => Instruction::I6XNN(x, nn),
-            0x7000 => Instruction::I7XNN(x, nn),
+            0x6000 => Instruction::I6XNN(x, nn as u8),
+            0x7000 => Instruction::I7XNN(x, nn as u8),
             0x8000 => match opcode & 0x000F {
                 0x0000 => Instruction::I8XY0(x, y),
                 0x0001 => Instruction::I8XY1(x, y),
@@ -93,8 +93,8 @@ impl Instruction {
             0x9000 => Instruction::I9XY0(x, y),
             0xA000 => Instruction::IANNN(jmp),
             0xB000 => Instruction::IBNNN(jmp),
-            0xC000 => Instruction::ICXNN(x, nn),
-            0xD000 => Instruction::IDXYN(x, y, opcode & 0x000F),
+            0xC000 => Instruction::ICXNN(x, nn as u8),
+            0xD000 => Instruction::IDXYN(x, y, (opcode & 0x000F) as u8),
             0xE000 => match opcode & 0x000F {
                 0x000E => Instruction::IEX9E(x),
                 0x0001 => Instruction::IEXA1(x),

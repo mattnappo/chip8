@@ -1,5 +1,4 @@
-use super::instruction::{Instruction, UnsupportedInstruction};
-use super::pixel;
+use super::instruction::{ErrUnsupportedInstruction, Instruction};
 use crate::arithmetic;
 use rand::Rng;
 use std::convert::TryInto;
@@ -26,12 +25,15 @@ const FONTSET: [u8; FONTSET_SIZE] = [
     0xF0, 0x80, 0xF0, 0xF0, 0x80, 0xF0, 0x80, 0x80,
 ];
 
+const OFF: u8 = 0x0;
+const ON: u8 = 0x1;
+
 // Chip8 is the struct that represents a single CHIP-8 interpreter.
 pub struct Chip8 {
-    pub memory: [u8; MEM_SIZE], // The memory
-    V: [u8; N_REGISTERS],       // The general purpose registers
-    I: u16,                     // The I register
-    stack: [u8; STACK_DEPTH],   // The stack
+    memory: [u8; MEM_SIZE],   // The memory
+    V: [u8; N_REGISTERS],     // The general purpose registers
+    I: u16,                   // The I register
+    stack: [u8; STACK_DEPTH], // The stack
 
     pc: u16, // The program counter
     sp: u8,  // The stack pointer
@@ -58,7 +60,7 @@ impl Chip8 {
             delay_timer: 0,
             sound_timer: 0,
 
-            display: [pixel::Pixel::OFF.bit(); WIDTH * HEIGHT],
+            display: [OFF; WIDTH * HEIGHT],
             keys: [0; N_KEYS], // Not actually initialized like this
         };
         c8.install_fontset();
@@ -98,12 +100,15 @@ impl Chip8 {
     // execute executes the virtual machine as it is in its current state.
     pub fn execute(&mut self) {
         while self.pc < self.memory.len() as u16 {
-            let opcode = self.memory[self.pc as usize] << 8
-                | self.memory[self.pc as usize + 1];
+            // The only reason why these are u16s is because it will make them easier
+            // to deal with when determining the instruction.
+            let current_instr: u16 = self.memory[self.pc as usize].into();
+            let next_instr: u16 = self.memory[self.pc as usize + 1].into();
+            let opcode: u16 = (current_instr << 8) | next_instr;
             let jmp: u16 = (opcode & 0x0FF).into(); // NNN (the jump address)
             let x: usize = ((opcode & 0x0F00) >> 8).into();
             let y: usize = ((opcode & 0x00F0) >> 4).into();
-            let nn: u8 = opcode & 0x00FF;
+            let nn: u16 = opcode & 0x00FF;
 
             let instr =
                 Instruction::get_instr_from_parts(opcode, jmp, x, y, nn);
@@ -115,14 +120,14 @@ impl Chip8 {
     pub fn execute_instruction(
         &mut self,
         i: Instruction,
-    ) -> Result<(), UnsupportedInstruction> {
+    ) -> Result<(), ErrUnsupportedInstruction> {
         let mut should_jump = false;
         match i {
             Instruction::I0NNN(a) => {} // Not really implemented
             Instruction::I00E0 => {
                 // Clear the display
                 for i in 0..self.display.len() {
-                    self.display[i] = pixel::Pixel::OFF.bit();
+                    self.display[i] = OFF;
                 }
             }
             Instruction::I00EE => {
@@ -199,7 +204,7 @@ impl Chip8 {
             Instruction::IFX55(x) => {}
             Instruction::IFX65(x) => {}
 
-            Instruction::UNSUPPORTED => return Err(UnsupportedInstruction),
+            Instruction::UNSUPPORTED => return Err(ErrUnsupportedInstruction),
         };
         Ok(())
     }
