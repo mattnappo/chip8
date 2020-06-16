@@ -30,10 +30,10 @@ const ON: u8 = 0x1;
 
 // Chip8 is the struct that represents a single CHIP-8 interpreter.
 pub struct Chip8 {
-    memory: [u8; MEM_SIZE],   // The memory
-    V: [u8; N_REGISTERS],     // The general purpose registers
-    I: u16,                   // The I register
-    stack: [u8; STACK_DEPTH], // The stack
+    pub memory: [u8; MEM_SIZE], // The memory
+    V: [u8; N_REGISTERS],       // The general purpose registers
+    I: u16,                     // The I register
+    stack: [u8; STACK_DEPTH],   // The stack
 
     pc: u16, // The program counter
     sp: u8,  // The stack pointer
@@ -85,6 +85,12 @@ impl Chip8 {
         }
     }
 
+    // register_dump prints the registers of the system.
+    pub fn register_dump(&self) {
+        for i in 0..self.V.len() {
+            println!("V{} = {:x}", i, self.V[i]);
+        }
+    }
     // parse_file will parse a CHIP-8 source code file and load it into the machine.
     pub fn parse_file(&mut self, filename: &str) {}
 
@@ -100,6 +106,7 @@ impl Chip8 {
     // execute executes the virtual machine as it is in its current state.
     pub fn execute(&mut self) {
         while self.pc < self.memory.len() as u16 {
+            println!("program counter: {}", self.pc);
             // The only reason why these are u16s is because it will make them easier
             // to deal with when determining the instruction.
             let current_instr: u16 = self.memory[self.pc as usize].into();
@@ -206,6 +213,10 @@ impl Chip8 {
 
             Instruction::UNSUPPORTED => return Err(ErrUnsupportedInstruction),
         };
+
+        if !should_jump {
+            self.pc += 2;
+        }
         Ok(())
     }
 }
