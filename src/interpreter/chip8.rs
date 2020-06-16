@@ -283,9 +283,23 @@ impl Chip8 {
                 let sprite: usize = 5 * (self.V[x] + 1);
                 self.I = self.memory[sprite] as u16;
             }
-            Instruction::IFX33(x) => {}
-            Instruction::IFX55(x) => {}
-            Instruction::IFX65(x) => {}
+            Instruction::IFX33(x) => {
+                self.memory[self.I] = self.V[x] / 100;
+                self.memory[self.I + 1] = (self.V[x] / 10) % 10;
+                self.memory[self.I + 2] = self.V[x] % 10;
+            }
+            Instruction::IFX55(x) => {
+                for i in 0..(x + 1) {
+                    self.memory[self.I + i] = self.V[i];
+                }
+                self.I += x + 1;
+            }
+            Instruction::IFX65(x) => {
+                for i in 0..(x + 1) {
+                    self.V[i] = self.memory[self.I + i];
+                }
+                self.I += x + 1;
+            }
 
             Instruction::UNSUPPORTED => return Err(ErrUnsupportedInstruction),
         };
