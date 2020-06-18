@@ -85,9 +85,10 @@ impl Chip8 {
             while let Some(event) = self.display.screen.next() {
                 // Step the processor once
                 self.cycle();
+                self.display.pixels[0] = ON;
+                self.display.pixels[WIDTH * 3 + 2] = ON;
                 // Draw the screen
                 self.display.draw(&event);
-                println!("This is running!");
             }
         }
     }
