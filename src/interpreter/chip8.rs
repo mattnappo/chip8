@@ -5,7 +5,6 @@ use rand::Rng;
 use std::convert::TryInto;
 use std::error;
 use std::fs;
-
 const MEM_SIZE: usize = 0x1000;
 const N_REGISTERS: usize = 16;
 const STACK_DEPTH: usize = 12;
@@ -79,14 +78,13 @@ impl Chip8 {
     }
 
     // run runs the contents of the virtual machine.
-    fn run(&mut self) {
+    pub fn run(&mut self) {
         // Run the window
         while let Some(event) = self.display.screen.next() {
             // Run the program until it stops
             while self.pc < self.memory.len() as u16 {
                 // Step the processor once
                 self.cycle();
-
                 // Draw the screen
                 self.display.draw(&event);
             }

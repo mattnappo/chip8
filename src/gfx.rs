@@ -22,10 +22,7 @@ impl Display {
         }
     }
 
-    pub fn draw<E>(&mut self, event: &E)
-    where
-        E: ,
-    {
+    pub fn draw(&mut self, event: &Event) {
         self.screen.draw_2d(event, |context, graphics, _device| {
             clear([1.0; 4], graphics);
             rectangle(
