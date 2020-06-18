@@ -17,6 +17,8 @@ fn main() {
     // c8.memory_dump(250);
     c8.full_dump();
 
+    println!("$$$");
+
     c8.run();
 
     for i in 0x200..0x210 {

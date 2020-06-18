@@ -84,7 +84,7 @@ impl Chip8 {
         while self.pc < self.memory.len() as u16 {
             // Run the window
             while let Some(event) = self.display.screen.next() {
-                self.register_dump();
+                // self.register_dump();
                 // Step the processor once
 
                 self.cycle();
@@ -168,10 +168,10 @@ impl Chip8 {
         // Fetch an instruction
         // The only reason why these are u16s is because it will make them easier
         // to deal with when determining the instruction.
-        let current_instr: u16 = self.memory[self.pc as usize].into();
-        let next_instr: u16 = self.memory[self.pc as usize + 1].into();
-        let opcode: u16 = (current_instr << 8) | next_instr;
-        let jmp: u16 = (opcode & 0x0FF).into(); // NNN (the jump address)
+        let b1: u16 = self.memory[self.pc as usize].into(); // Fetch the first byte
+        let b2: u16 = self.memory[self.pc as usize + 1].into(); // Fetch the second byte
+        let opcode: u16 = (b1 << 8) | b2; // Concat the two
+        let jmp: u16 = (opcode & 0x0FFF).into(); // NNN (the jump address)
         let x: usize = ((opcode & 0x0F00) >> 8).into();
         let y: usize = ((opcode & 0x00F0) >> 4).into();
         let nn: u16 = opcode & 0x00FF;
@@ -181,14 +181,17 @@ impl Chip8 {
             self.memory[self.pc as usize]
         );
         println!("program counter: {}", self.pc);
+
+        // println!("random operation: 0x{:04x}", (0xab << 8) | 0xcd);
         // Execute the fetched instruction
         let instr = Instruction::get_instr_from_parts(opcode, jmp, x, y, nn);
         println!(
-            "opcode: {}, jmp: {}, x: {}, y: {}, nn: {}",
+            "opcode: {:x}, jmp: {:x}, x: {}, y: {}, nn: {}",
             opcode, jmp, x, y, nn
         );
         println!("fetched instruction '{:?}'", instr);
         self.execute(instr);
+        println!("");
     }
 
     // execute executes a single instruction.
