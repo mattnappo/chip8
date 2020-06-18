@@ -78,6 +78,10 @@ impl Chip8 {
         c8
     }
 
+    fn run(&mut self) {
+        // while let Some(event) = self.screen.next() {}
+    }
+
     // install_fontset loads the font ROM into memory.
     fn install_fontset(&mut self) {
         for i in 0..FONTSET.len() {
