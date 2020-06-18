@@ -5,7 +5,7 @@ const SCALE: f64 = 20.0;
 
 pub struct Display {
     pub pixels: [u8; WIDTH * HEIGHT], // The pixels themselves
-    screen: PistonWindow,
+    pub screen: PistonWindow,
 }
 
 impl Display {
@@ -24,7 +24,7 @@ impl Display {
 
     pub fn draw<E>(&mut self, event: &E)
     where
-        E: GenericEvent,
+        E: ,
     {
         self.screen.draw_2d(event, |context, graphics, _device| {
             clear([1.0; 4], graphics);

@@ -78,8 +78,19 @@ impl Chip8 {
         c8
     }
 
+    // run runs the contents of the virtual machine.
     fn run(&mut self) {
-        // while let Some(event) = self.screen.next() {}
+        // Run the window
+        while let Some(event) = self.display.screen.next() {
+            // Run the program until it stops
+            while self.pc < self.memory.len() as u16 {
+                // Step the processor once
+                self.cycle();
+
+                // Draw the screen
+                self.display.draw(&event);
+            }
+        }
     }
 
     // install_fontset loads the font ROM into memory.
@@ -126,13 +137,6 @@ impl Chip8 {
         Ok(())
     }
 
-    // execute executes the virtual machine as it is in its current state.
-    pub fn execute(&mut self) {
-        while self.pc < self.memory.len() as u16 {
-            self.cycle();
-        }
-    }
-
     // cycle will step the virtual machine once.
     pub fn cycle(&mut self) {
         // Count down the timers
@@ -158,11 +162,11 @@ impl Chip8 {
 
         // Execute the fetched instruction
         let instr = Instruction::get_instr_from_parts(opcode, jmp, x, y, nn);
-        self.execute_instruction(instr);
+        self.execute(instr);
     }
 
-    // execute_instruction executes a single instruction.
-    fn execute_instruction(
+    // execute executes a single instruction.
+    fn execute(
         &mut self,
         i: Instruction,
     ) -> Result<(), ErrUnsupportedInstruction> {

@@ -16,7 +16,7 @@ fn main() {
     c8.load_rom("roms/PONG.bin").expect("Could not load ROM");
     // c8.memory_dump(250);
 
-    c8.execute();
+    c8.run();
     c8.register_dump();
 
     for i in 0x200..0x210 {
