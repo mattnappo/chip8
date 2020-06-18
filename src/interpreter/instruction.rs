@@ -17,6 +17,7 @@ impl std::fmt::Display for ErrUnsupportedInstruction {
     }
 }
 
+#[derive(Debug)]
 pub enum Instruction {
     I0NNN(Addr),        // 0NNN
     I00E0,              // 00E0

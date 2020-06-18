@@ -5,13 +5,14 @@ use rand::Rng;
 use std::convert::TryInto;
 use std::error;
 use std::fs;
+
 const MEM_SIZE: usize = 0x1000;
 const N_REGISTERS: usize = 16;
 const STACK_DEPTH: usize = 12;
 const PROGRAM_START: u16 = 0x200;
+const F: usize = 0xF;
 pub const WIDTH: usize = 64;
 pub const HEIGHT: usize = 32;
-const F: usize = 0xF;
 
 const FONTSET_SIZE: usize = 80;
 const FONT_HEIGHT: usize = 8;
@@ -83,10 +84,15 @@ impl Chip8 {
         while self.pc < self.memory.len() as u16 {
             // Run the window
             while let Some(event) = self.display.screen.next() {
+                self.register_dump();
                 // Step the processor once
+
                 self.cycle();
+
+                // Set some random pixels
                 self.display.pixels[0] = ON;
                 self.display.pixels[WIDTH * 3 + 2] = ON;
+
                 // Draw the screen
                 self.display.draw(&event);
             }
@@ -118,19 +124,30 @@ impl Chip8 {
         }
     }
 
-    // register_dump prints the registers of the system.
-    pub fn register_dump(&self) {
-        for i in 0..self.V.len() {
-            println!("V{} = {:x}", i, self.V[i]);
+    // full_dump prints the entire memory space and address space.
+    pub fn full_dump(&self) {
+        println!("ADR    | BYTE");
+        println!("-------|------");
+        for i in 0..self.memory.len() {
+            println!("0x{:04x} | 0x{:02x}", i, self.memory[i]);
         }
     }
+
+    // register_dump prints the registers of the system.
+    pub fn register_dump(&self) {
+        print!("{esc}[2J{esc}[1;1H", esc = 27 as char);
+        for i in 0..self.V.len() {
+            println!("V[{}] = {:x}", i, self.V[i]);
+        }
+    }
+
     // parse_file will parse a CHIP-8 source code file and load it into the machine.
     pub fn parse_file(&mut self, filename: &str) {}
 
     // load_rom loads a ROM given the filename of the ROM and loads it into the machine.
     pub fn load_rom(&mut self, filename: &str) -> Result<(), std::io::Error> {
         let rom = fs::read(filename)?;
-        for i in 0..rom.len() {
+        for i in (0..rom.len()) {
             self.memory[i + PROGRAM_START as usize] = rom[i];
         }
         Ok(())
@@ -159,8 +176,18 @@ impl Chip8 {
         let y: usize = ((opcode & 0x00F0) >> 4).into();
         let nn: u16 = opcode & 0x00FF;
 
+        println!(
+            "self.memory[self.pc as usize] = {}",
+            self.memory[self.pc as usize]
+        );
+        println!("program counter: {}", self.pc);
         // Execute the fetched instruction
         let instr = Instruction::get_instr_from_parts(opcode, jmp, x, y, nn);
+        println!(
+            "opcode: {}, jmp: {}, x: {}, y: {}, nn: {}",
+            opcode, jmp, x, y, nn
+        );
+        println!("fetched instruction '{:?}'", instr);
         self.execute(instr);
     }
 
@@ -177,6 +204,7 @@ impl Chip8 {
                 for i in 0..self.display.pixels.len() {
                     self.display.pixels[i] = OFF;
                 }
+                println!("display cleared");
             }
             Instruction::I00EE => {
                 // Return from subroutine

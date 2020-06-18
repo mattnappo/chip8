@@ -11,13 +11,13 @@ fn generate_test_program() {
 fn main() {
     // generate_test_program();
     let mut c8 = interpreter::chip8::Chip8::new();
-    c8.memory_dump(100);
+    println!("\n\n");
 
     c8.load_rom("roms/PONG.bin").expect("Could not load ROM");
     // c8.memory_dump(250);
+    c8.full_dump();
 
     c8.run();
-    c8.register_dump();
 
     for i in 0x200..0x210 {
         println!("memory @ 0x{:x}: 0x{:x}", i, c8.memory[i]);
