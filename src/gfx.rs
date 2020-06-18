@@ -41,10 +41,12 @@ impl Display {
                     rectangle(
                         color,
                         [
-                            i as f64 * SCALE,                 // x pos
-                            j as f64 * SCALE,                 // y pos
-                            1.0 * SCALE + (i as f64 * SCALE), // Pixel width
-                            1.0 * SCALE + (j as f64 * SCALE), // Pixel height
+                            i as f64 * SCALE, // x pos
+                            j as f64 * SCALE, // y pos
+                            SCALE,            // Pixel width
+                            SCALE,            // Pixel height
+                                              // 1.0 * SCALE + (i as f64 * SCALE), // Pixel width
+                                              // 1.0 * SCALE + (j as f64 * SCALE), // Pixel height
                         ],
                         context.transform,
                         graphics,

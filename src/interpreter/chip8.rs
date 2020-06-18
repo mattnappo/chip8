@@ -96,7 +96,6 @@ impl Chip8 {
     // install_fontset loads the font ROM into memory.
     fn install_fontset(&mut self) {
         for i in 0..FONTSET.len() {
-            println!("fontset[{}] = {:x}", i, FONTSET[i]);
             self.memory[i] = FONTSET[i];
         }
     }
@@ -221,7 +220,6 @@ impl Chip8 {
             }
             Instruction::I6XNN(x, b) => {
                 self.V[x] = b;
-                println!("V[{}] = {}", x, b)
             }
             Instruction::I7XNN(x, b) => self.V[x] += b,
             Instruction::I8XY0(x, y) => self.V[x] = self.V[y],
